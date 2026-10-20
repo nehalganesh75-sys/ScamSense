@@ -8,29 +8,35 @@ from app.models.models import User, Analysis, Indicator, URLInspection, Scenario
 from app.services.simulator_service import SCENARIOS_DATA
 from app.api import analyze, inspect_url, dashboard, reports, simulator, patterns, safety, auth
 
-# Create all database tables
-Base.metadata.create_all(bind=engine)
+# Create all database tables safely
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Database initialization note: {e}")
 
 # Seed demo scenarios if needed
 def seed_initial_data():
-    db = SessionLocal()
     try:
-        if db.query(Scenario).count() == 0:
-            for s in SCENARIOS_DATA:
-                scen = Scenario(
-                    id=s["id"],
-                    category=s["category"],
-                    difficulty=s["difficulty"],
-                    title=s["title"],
-                    fictional_sender=s["fictional_sender"],
-                    fictional_message=s["fictional_message"],
-                    options=s["options"],
-                    learning_takeaway=s["learning_takeaway"]
-                )
-                db.add(scen)
-            db.commit()
-    finally:
-        db.close()
+        db = SessionLocal()
+        try:
+            if db.query(Scenario).count() == 0:
+                for s in SCENARIOS_DATA:
+                    scen = Scenario(
+                        id=s["id"],
+                        category=s["category"],
+                        difficulty=s["difficulty"],
+                        title=s["title"],
+                        fictional_sender=s["fictional_sender"],
+                        fictional_message=s["fictional_message"],
+                        options=s["options"],
+                        learning_takeaway=s["learning_takeaway"]
+                    )
+                    db.add(scen)
+                db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"Database seeding note: {e}")
 
 seed_initial_data()
 
