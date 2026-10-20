@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: scamsense_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: scamsense_user
+      POSTGRES_PASSWORD: scamsense_secure_password
+      POSTGRES_DB: scamsense_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scamsense_user -d scamsense_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scamsense_backend
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://scamsense_user:scamsense_secure_password@db:5432/scamsense_db
+      SECRET_KEY: production-secret-key-change-in-real-deployment
+      ALGORITHM: HS256
+      BACKEND_CORS_ORIGINS: '["http://localhost:5173", "http://localhost:3000", "http://localhost"]'
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: scamsense_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:
