@@ -5,23 +5,35 @@ from app.core.config import settings
 
 logger = logging.getLogger("scamsense.db")
 
-db_url = settings.DATABASE_URL
-# Fix Heroku / Render legacy postgres:// prefix
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
+def init_engine(raw_url: str):
+    url = raw_url.strip() if raw_url else "sqlite:///./scamsense.db"
+    
+    # Auto-fix common typos (e.g. postgresq1 with number 1 or legacy postgres://)
+    if url.startswith("postgresq1://"):
+        url = "postgresql://" + url[13:]
+    elif url.startswith("postgres://"):
+        url = "postgresql://" + url[11:]
 
-# Engine configuration with dialect-specific parameters
-if db_url.startswith("sqlite"):
-    engine = create_engine(
-        db_url,
-        connect_args={"check_same_thread": False}
-    )
-else:
-    engine = create_engine(
-        db_url,
-        pool_pre_ping=True,
-        pool_recycle=300
-    )
+    try:
+        if url.startswith("sqlite"):
+            return create_engine(
+                url,
+                connect_args={"check_same_thread": False}
+            )
+        else:
+            return create_engine(
+                url,
+                pool_pre_ping=True,
+                pool_recycle=300
+            )
+    except Exception as e:
+        logger.error("Failed to initialize database engine for URL '%s': %s. Falling back to SQLite.", url, e)
+        return create_engine(
+            "sqlite:///./scamsense.db",
+            connect_args={"check_same_thread": False}
+        )
+
+engine = init_engine(settings.DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
