@@ -1,6 +1,6 @@
 import datetime
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 # --- Analyzer Schemas ---
 
@@ -44,8 +44,7 @@ class AnalysisOut(BaseModel):
     limitations: List[str] = []
     created_at: Optional[datetime.datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # --- Link Inspector Schemas ---
 
@@ -147,8 +146,7 @@ class UserOut(BaseModel):
     consent_store_content: bool
     created_at: datetime.datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class UserSettingsUpdate(BaseModel):
     full_name: Optional[str] = None
